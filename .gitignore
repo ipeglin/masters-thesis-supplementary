@@ -1,0 +1,15 @@
+.cache/
+__pycache__
+
+.DS_Store
+
+# Retain external module
+!lib/mvmd/*
+
+# Explicitly release files
+confounds/*
+*.py
+*ipynb
+
+
+!simulate_k.ipynb
