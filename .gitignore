@@ -13,3 +13,4 @@ confounds/*
 
 
 !simulate_k.ipynb
+!plot_trial_blocks.ipynb
