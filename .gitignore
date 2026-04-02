@@ -10,6 +10,7 @@ __pycache__
 confounds/*
 *.py
 *ipynb
+*.sh
 
 !plot_config.py
 !simulate_k.ipynb
