@@ -11,6 +11,6 @@ confounds/*
 *.py
 *ipynb
 
-
+!plot_config.py
 !simulate_k.ipynb
 !plot_trial_blocks.ipynb
