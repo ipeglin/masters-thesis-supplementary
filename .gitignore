@@ -15,3 +15,7 @@ confounds/*
 !plot_config.py
 !simulate_k.ipynb
 !plot_trial_blocks.ipynb
+!plot_timeseries.ipynb
+!plot_fisher_z_transform.py
+!plot_hrf.py
+!plot_mvmd_modes.ipynb
