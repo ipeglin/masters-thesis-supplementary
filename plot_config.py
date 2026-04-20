@@ -3,9 +3,16 @@ Global matplotlib configuration for consistent thesis figures.
 
 Import this module before any other plotting code:
     import plot_config  # noqa: F401
+
+Also exposes REPO_ROOT (the directory containing this file) so scripts in
+subdirectories can build repo-root-relative output paths.
 """
 
+from pathlib import Path
+
 import matplotlib as mpl
+
+REPO_ROOT = Path(__file__).resolve().parent
 
 # --- Font ---
 # cmr10 is Computer Modern Roman bundled with matplotlib (the LaTeX default).

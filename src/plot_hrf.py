@@ -4,6 +4,13 @@ and its frequency-domain magnitude spectrum to illustrate the low-pass filter
 characteristic of the BOLD HRF (Friston et al. 1998).
 """
 
+import sys
+from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
 import plot_config  # noqa: F401 – applies global rcParams
 
 import numpy as np

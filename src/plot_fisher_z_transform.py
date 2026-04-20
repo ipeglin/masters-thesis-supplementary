@@ -22,9 +22,14 @@ This script shows:
 """
 
 import os
+import sys
 from pathlib import Path
 
-_matplotlib_cache_dir = Path(__file__).parent / ".cache" / "matplotlib"
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+_matplotlib_cache_dir = _REPO_ROOT / ".cache" / "matplotlib"
 _matplotlib_cache_dir.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("MPLCONFIGDIR", str(_matplotlib_cache_dir))
 
@@ -252,7 +257,7 @@ def plot_sample_size_effect(rng) -> plt.Figure:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    out_dir = Path(__file__).parent / "plots"
+    out_dir = plot_config.REPO_ROOT / "plots"
     out_dir.mkdir(exist_ok=True)
 
     rng = np.random.default_rng(RNG_SEED)
