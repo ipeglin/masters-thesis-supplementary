@@ -13,8 +13,9 @@ confounds/*
 *ipynb
 *.sh
 
-!plot_config.py
 !simulate_k.ipynb
+!convert_weights.py
+!plot_config.py
 !plot_trial_blocks.ipynb
 !plot_timeseries.ipynb
 !plot_fisher_z_transform.py
