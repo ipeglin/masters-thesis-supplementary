@@ -1,6 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name="run_pipeline"
-#SBATCH --account=share-ie-idi
+#SBATCH --job-name="run-pipeline"   # Sensible name for the job
+#SBATCH --account=share-ie-idi      # Account for consumed resources
+#SBATCH --nodes=2                   # Allocate nodes for the job
+#SBATCH --mem=64G
+#SBATCH -c28                        # Number of cores (can vary)
+#SBATCH --time=03-00:00:00          # Upper time limit for the job (DD-HH:MM:SS)
+#SBATCH --partition=GPUQ
 #SBATCH --mail-user=$USER@stud.ntnu.no  # Fixed by injection script
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT
 
