@@ -17,6 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parent
 # --- Font ---
 # cmr10 is Computer Modern Roman bundled with matplotlib (the LaTeX default).
 # STIXGeneral is the fallback; it is designed to match CM aesthetics.
+mpl.pyplot.rcParams['axes.formatter.use_mathtext'] = True
 mpl.rcParams["font.family"] = "serif"
 mpl.rcParams["font.serif"] = ["cmr10", "STIXGeneral", "DejaVu Serif"]
 
