@@ -15,8 +15,6 @@ USER_NAME = ""
 # Now use the injected USER_NAME safely in shell commands
 mkdir -p /cluster/home/$USER_NAME/slurm/output_logs
 
-PROJECT_ROOT = ""
-
 # Unload all modules
 module purge
 
