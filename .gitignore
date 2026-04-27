@@ -18,13 +18,14 @@ figures/*
 !plotting/plot_timeseries.ipynb
 !plotting/plot_trial_blocks.ipynb
 !plotting/simulate_k.ipynb
+!plotting/plot_mvmd_modes.ipynb
 
 # Python Scripts
 !utils/convert_weights.py
 !plotting/plot_config.py
 !plotting/plot_fisher_z_transform.py
 !plotting/plot_hrf.py
-!plotting/plot_mvmd_modes.ipynb
+!plotting/knn_results_cmp.py
 
 # Bash Scripts
 !utils/repack_hdf5.sh
