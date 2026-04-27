@@ -14,16 +14,16 @@ confounds/*
 *.sh
 
 # Notebooks
-!src/plot_timeseries.ipynb
-!src/plot_trial_blocks.ipynb
-!src/simulate_k.ipynb
+!plotting/plot_timeseries.ipynb
+!plotting/plot_trial_blocks.ipynb
+!plotting/simulate_k.ipynb
 
 # Python Scripts
-!src/convert_weights.py
-!src/plot_config.py
-!src/plot_fisher_z_transform.py
-!src/plot_hrf.py
-!src/plot_mvmd_modes.ipynb
+!utils/convert_weights.py
+!plotting/plot_config.py
+!plotting/plot_fisher_z_transform.py
+!plotting/plot_hrf.py
+!plotting/plot_mvmd_modes.ipynb
 
 # Bash Scripts
-!scripts/repack_hdf5.sh
+!utils/repack_hdf5.sh
