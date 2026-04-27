@@ -29,4 +29,4 @@ bash $PROJECT_ROOT/scripts/init.sh # build hdf5 crate locally (manual clone in ~
 source $PROJECT_ROOT/scripts/sys-idun_env.sh
 
 # Run Rust scripts (most steps are almost instantaneous)
-bash $PROJECT_ROOT/scripts/run_pipeline_with_debug_mode.sh
+bash $PROJECT_ROOT/scripts/run-pipeline_mode-debug.sh
