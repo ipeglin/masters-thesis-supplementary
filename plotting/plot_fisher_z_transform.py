@@ -33,11 +33,11 @@ _matplotlib_cache_dir = _REPO_ROOT / ".cache" / "matplotlib"
 _matplotlib_cache_dir.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("MPLCONFIGDIR", str(_matplotlib_cache_dir))
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.stats import norm as scipy_norm
 
-import plot_config  # noqa: F401
+import plot_config as plot_config  # noqa: F401
 
 # ---------------------------------------------------------------------------
 # Parameters
