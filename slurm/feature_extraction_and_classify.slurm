@@ -29,7 +29,5 @@ bash $PROJECT_ROOT/scripts/init.sh # build hdf5 crate locally (manual clone in ~
 source $PROJECT_ROOT/scripts/sys-idun_env.sh
 
 # Run Rust crates
-cargo build --release --all-features
-
 cargo run --release --all-features -- feature-extraction --force
 cargo run --release --all-features -- classify
