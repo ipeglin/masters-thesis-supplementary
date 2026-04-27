@@ -257,7 +257,7 @@ def plot_sample_size_effect(rng) -> plt.Figure:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    out_dir = plot_config.REPO_ROOT / "plots"
+    out_dir = plot_config.REPO_ROOT / "figures"
     out_dir.mkdir(exist_ok=True)
 
     rng = np.random.default_rng(RNG_SEED)

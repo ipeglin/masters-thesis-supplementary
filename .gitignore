@@ -9,6 +9,7 @@ venv/
 
 # Explicitly release files
 confounds/*
+figures/*
 *.py
 *ipynb
 *.sh
