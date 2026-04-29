@@ -2,10 +2,11 @@ h5py
 ipykernel
 librosa
 matplotlib
+nilearn
+num2words
 numpy
 pandas
 scipy
-torch
 safetensors
 seaborn
-num2words
+torch
