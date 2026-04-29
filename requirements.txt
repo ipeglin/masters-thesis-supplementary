@@ -8,3 +8,4 @@ scipy
 torch
 safetensors
 seaborn
+num2words
