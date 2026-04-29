@@ -2,9 +2,10 @@ h5py
 ipykernel
 librosa
 matplotlib
+nilearn
 numpy
 pandas
 scipy
-torch
 safetensors
 seaborn
+torch
