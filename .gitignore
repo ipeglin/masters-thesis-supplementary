@@ -4,8 +4,6 @@ __pycache__
 .DS_Store
 venv/
 
-# Retain external module
-!lib/mvmd/*
 
 # Explicitly release files
 confounds/*
@@ -13,6 +11,10 @@ figures/*
 *.py
 *ipynb
 *.sh
+
+# Retain external module
+!lib/mvmd/*
+!lib/fs/*
 
 # Notebooks
 !plotting/plot_timeseries.ipynb
