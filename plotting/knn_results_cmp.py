@@ -4,26 +4,15 @@ import re
 import sys
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Setup Paths & Matplotlib environment
-# ---------------------------------------------------------------------------
-# Resolve the project root (assuming this script is in /scripts)
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
-
-# Setup a local matplotlib cache to avoid conflicts
-_matplotlib_cache_dir = _REPO_ROOT / ".cache" / "matplotlib"
-_matplotlib_cache_dir.mkdir(parents=True, exist_ok=True)
-os.environ.setdefault("MPLCONFIGDIR", str(_matplotlib_cache_dir))
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 
+from lib.fs.get_script_name import get_name
+from lib.fs.project_config import REPO_ROOT
 # Import local configuration for REPO_ROOT and styling
-import plot_config as plot_config  # noqa: F401
+from plotting import plot_config
 
 # Directory where your JSON result files are located
 RESULTS_DIR = Path("/Users/ipeglin/Documents/masters_thesis/classifier_results/")
@@ -55,44 +44,78 @@ def format_label(text):
     # Ensure spectrogram acronyms are fully capitalized
     if text.lower() in ['cwt', 'hht']:
         return text.upper()
-      
+
     # Replace underscores with spaces and apply Title Case
     return text.replace("_", " ").title()
+
+
+def slugify(text):
+    """Filesystem-safe lowercase slug for filenames."""
+    if not text:
+        return "unspecified"
+    return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_") or "unspecified"
 
 # ---------------------------------------------------------------------------
 # Data Loading
 # ---------------------------------------------------------------------------
 
+# Sentinel for results that landed at RESULTS_DIR root (no roi_selection.name suffix)
+UNNAMED_ROI_SELECTION = "_unnamed"
+
+
 def load_results(directory):
-    """Reads JSON files, applies Title Case formatting, and enforces analysis order."""
+    """Recursively reads JSON files under per-ROI-selection subdirs.
+
+    Each JSON's parent dir name is treated as the roi_selection identifier
+    (matches `AppConfig::resolved_classification_results_dir()` layout). When
+    the report itself carries `roi_selection_name` / `roi_selection_fingerprint`
+    fields they take precedence and are recorded for strict fingerprint-based
+    grouping downstream.
+    """
+    base = Path(directory).resolve()
     records = []
-    for filepath in Path(directory).glob("*.json"):
+    for filepath in base.rglob("*.json"):
         with open(filepath, 'r') as f:
             data = json.load(f)
-            
-            # Extract run index from filename (e.g. run-00, run-01)
-            run_match = re.search(r'run-(\d+)', filepath.stem)
-            run_idx = int(run_match.group(1)) if run_match else 0
-            
-            # Format metadata attributes
-            record = {
-                "run": run_idx,
-                "analysis": format_label(data.get("analysis")),
-                "source": format_label(data.get("source")),
-                "k": data.get("num_neighbors"),
-                "metric": format_label(data.get("metric")),
-            }
-            
-            # Extract Metrics from Test and Validation splits
-            for split in ['test', 'val']:
-                if split in data:
-                    record[f"{split}_acc"] = data[split].get("accuracy")
-                    record[f"{split}_sens"] = data[split].get("sensitivity")
-                    record[f"{split}_spec"] = data[split].get("specificity")
-                    record[f"{split}_cm"] = data[split].get("confusion_matrix")
-                    
-            records.append(record)
-    
+
+        # Extract run index from filename (e.g. run-00, run-01)
+        run_match = re.search(r'run-(\d+)', filepath.stem)
+        run_idx = int(run_match.group(1)) if run_match else 0
+
+        # Parent dir relative to RESULTS_DIR encodes roi_selection.name
+        parent = filepath.parent.resolve()
+        if parent == base:
+            dir_selection = UNNAMED_ROI_SELECTION
+        else:
+            dir_selection = parent.relative_to(base).parts[0]
+
+        # Prefer fingerprint/name from the report payload when present
+        report_name = data.get("roi_selection_name")
+        report_fp = data.get("roi_selection_fingerprint")
+        roi_selection = report_name or dir_selection
+        roi_fingerprint = report_fp or dir_selection
+
+        # Format metadata attributes
+        record = {
+            "run": run_idx,
+            "analysis": format_label(data.get("analysis")),
+            "source": format_label(data.get("source")),
+            "k": data.get("num_neighbors"),
+            "metric": format_label(data.get("metric")),
+            "roi_selection": roi_selection,
+            "roi_fingerprint": roi_fingerprint,
+        }
+
+        # Extract Metrics from Test and Validation splits
+        for split in ['test', 'val']:
+            if split in data:
+                record[f"{split}_acc"] = data[split].get("accuracy")
+                record[f"{split}_sens"] = data[split].get("sensitivity")
+                record[f"{split}_spec"] = data[split].get("specificity")
+                record[f"{split}_cm"] = data[split].get("confusion_matrix")
+
+        records.append(record)
+
     df = pd.DataFrame(records)
     
     if not df.empty:
@@ -117,14 +140,14 @@ def load_results(directory):
 # Plotting Functions
 # ---------------------------------------------------------------------------
 
-def plot_comparative_metrics(df, save_dir: Path, run_val=0):
+def plot_comparative_metrics(df, save_dir: Path, run_val=0, roi_selection: str = UNNAMED_ROI_SELECTION):
     """Plots comparative bar charts with clean metric and distance labels."""
     melted = df.melt(
-        id_vars=['run', 'analysis', 'source', 'k', 'metric'], 
+        id_vars=['run', 'analysis', 'source', 'k', 'metric'],
         value_vars=['test_acc', 'test_sens', 'test_spec'],
         var_name='Metric_Type', value_name='Score'
     )
-    
+
     # Map internal variable names to clean legend names
     melted['Metric_Type'] = melted['Metric_Type'].replace({
         'test_acc': 'Accuracy', 'test_sens': 'Sensitivity', 'test_spec': 'Specificity'
@@ -139,37 +162,42 @@ def plot_comparative_metrics(df, save_dir: Path, run_val=0):
         height=4, aspect=1.2, margin_titles=True,
         order=df['analysis'].cat.categories
     )
-    
+
     # FIXED: Using correct keys {col_name} and {row_name}
     g.set_titles(col_template="{col_name}", row_template="Distance Metric: {row_name}")
-    
+
     # Global title with K-neighbor info
     k_val = df['k'].iloc[0]
     metric_val = df['metric'].iloc[0]
-    g.fig.suptitle(f"KNN Performance Comparison (Run {run_val:02d}, K={k_val}, Metric={metric_val})", y=1.05, fontsize=16)
-    
+    g.fig.suptitle(
+        f"KNN Performance Comparison (ROI={roi_selection}, Run {run_val:02d}, K={k_val}, Metric={metric_val})",
+        y=1.05, fontsize=16,
+    )
+
     g.set_axis_labels("Analysis Type", "Score (0-1)")
     for ax in g.axes.flat:
         plt.setp(ax.get_xticklabels(), rotation=30, ha='right')
 
     # Save to PDF and then display to screen
-    safe_metric = metric_val.lower().replace(' ', '_')
-    filename = f"knn_performance_run{run_val:02d}_k{k_val}_{safe_metric}.pdf"
-    g.savefig(save_dir / filename, bbox_inches='tight')
-    
+    safe_metric = slugify(metric_val)
+    safe_roi = slugify(roi_selection)
+    filename = f"knn_performance_roi-{safe_roi}_run{run_val:02d}_k{k_val}_{safe_metric}.pdf"
+    g.savefig(save_dir / filename)
+
     if SHOW_FIGURES:
         plt.show()
-        
+
     plt.close()
 
 
-def plot_confusion_matrices(df, save_dir: Path, run_val=0):
+def plot_confusion_matrices(df, save_dir: Path, run_val=0, roi_selection: str = UNNAMED_ROI_SELECTION):
     """Plots confusion matrices in the specified categorical order."""
     num_plots = len(df)
     cols = 4
     rows = int(np.ceil(num_plots / cols))
     
-    fig, axes = plt.subplots(rows, cols, figsize=(cols * 4, rows * 3.5), squeeze=False)
+    # fig, axes = plt.subplots(rows, cols, figsize=(cols * 4, rows * 3.5), squeeze=False)
+    fig, axes = plt.subplots(rows, cols, squeeze=False)
     axes = axes.flatten()
     
     for idx, (_, row) in enumerate(df.iterrows()):
@@ -191,20 +219,21 @@ def plot_confusion_matrices(df, save_dir: Path, run_val=0):
     # Hide empty subplots
     for i in range(num_plots, len(axes)):
         fig.delaxes(axes[i])
-        
-    plt.tight_layout()
+
     k_val = df['k'].iloc[0]
     metric_val = df['metric'].iloc[0]
-    safe_metric = metric_val.lower().replace(' ', '_')
-    filename = f"knn_cm_run{run_val:02d}_k{k_val}_{safe_metric}.pdf"
+    safe_metric = slugify(metric_val)
+    safe_roi = slugify(roi_selection)
+    fig.suptitle(f"ROI Selection: {roi_selection}", fontsize=12, y=1.0)
+    filename = f"knn_cm_roi-{safe_roi}_run{run_val:02d}_k{k_val}_{safe_metric}.pdf"
     fig.savefig(save_dir / filename, dpi=300)
-    
+
     if SHOW_FIGURES:
         plt.show()
-        
+
     plt.close(fig)
 
-def plot_run_development(df, save_dir: Path):
+def plot_run_development(df, save_dir: Path, roi_selection: str = UNNAMED_ROI_SELECTION):
     """Plots cross-run development for equal conditions."""
     melted = df.melt(
         id_vars=['run', 'analysis', 'source', 'k', 'metric'], 
@@ -225,19 +254,23 @@ def plot_run_development(df, save_dir: Path):
     )
     
     g.set_titles(col_template="{col_name}", row_template="Distance Metric: {row_name}")
-    
+
     # Global title
     k_val = df['k'].iloc[0]
     metric_val = df['metric'].iloc[0]
-    g.fig.suptitle(f"KNN Cross-Run Dev (K={k_val}, Metric={metric_val})", y=1.05, fontsize=16)
-    
+    g.fig.suptitle(
+        f"KNN Cross-Run Dev (ROI={roi_selection}, K={k_val}, Metric={metric_val})",
+        y=1.05, fontsize=16,
+    )
+
     # Use distinct x-ticks for categorical runs
     for ax in g.axes.flat:
         ax.set_xticks(df['run'].unique())
-    
-    safe_metric = metric_val.lower().replace(' ', '_')
-    filename = f"knn_run_dev_k{k_val}_{safe_metric}.pdf"
-    g.savefig(save_dir / filename, bbox_inches='tight')
+
+    safe_metric = slugify(metric_val)
+    safe_roi = slugify(roi_selection)
+    filename = f"knn_run_dev_roi-{safe_roi}_k{k_val}_{safe_metric}.pdf"
+    g.savefig(save_dir / filename)
     
     if SHOW_FIGURES:
         plt.show()
@@ -249,9 +282,7 @@ def plot_run_development(df, save_dir: Path):
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    # Target project-root figures directory
-    out_dir = plot_config.REPO_ROOT / "figures"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = plot_config.get_figs_output_dir()
 
     if not RESULTS_DIR.exists():
         print(f"Error: Results directory {RESULTS_DIR} not found.")
@@ -263,23 +294,26 @@ if __name__ == "__main__":
     if results_df.empty:
         print("No valid JSON results found in the specified directory.")
     else:
-        # Group by K and distance metric to plot cross-run development
-        for (k_val, metric_val), group_df in results_df.groupby(['k', 'metric']):
-            if len(group_df['run'].unique()) > 1:
-                print(f"Generating cross-run dev plot for K={k_val}, Metric={metric_val}...")
-                dev_df = group_df.copy()
-                dev_df['analysis'] = dev_df['analysis'].cat.remove_unused_categories()
-                plot_run_development(dev_df, out_dir)
+        # Outer partition: roi_fingerprint. Plots never mix selections.
+        for fingerprint, fp_df in results_df.groupby('roi_fingerprint'):
+            roi_selection_name = fp_df['roi_selection'].iloc[0]
+            print(f"\n=== ROI selection: {roi_selection_name} (fp={fingerprint}) ===")
 
-        # Group by Run, K, and distance metric for within-run comparison
-        groups = results_df.groupby(['run', 'k', 'metric'])
-        for (run_val, k_val, metric_val), group_df in groups:
-            print(f"Generating plots for Run={run_val:02d}, K={k_val}, Metric={metric_val}...")
-            # Drop unused categories for cleaner plots
-            group_df = group_df.copy()
-            group_df['analysis'] = group_df['analysis'].cat.remove_unused_categories()
-            
-            plot_comparative_metrics(group_df, out_dir, run_val)
-            plot_confusion_matrices(group_df, out_dir, run_val)
-        
-        print(f"Success! Figures saved in: {out_dir}")
+            # Cross-run dev plots: group by K + distance metric within selection
+            for (k_val, metric_val), group_df in fp_df.groupby(['k', 'metric']):
+                if len(group_df['run'].unique()) > 1:
+                    print(f"  cross-run dev: K={k_val}, Metric={metric_val}")
+                    dev_df = group_df.copy()
+                    dev_df['analysis'] = dev_df['analysis'].cat.remove_unused_categories()
+                    plot_run_development(dev_df, out_dir, roi_selection=roi_selection_name)
+
+            # Within-run plots: group by Run + K + distance metric within selection
+            for (run_val, k_val, metric_val), group_df in fp_df.groupby(['run', 'k', 'metric']):
+                print(f"  run={run_val:02d}, K={k_val}, Metric={metric_val}")
+                group_df = group_df.copy()
+                group_df['analysis'] = group_df['analysis'].cat.remove_unused_categories()
+
+                plot_comparative_metrics(group_df, out_dir, run_val, roi_selection=roi_selection_name)
+                plot_confusion_matrices(group_df, out_dir, run_val, roi_selection=roi_selection_name)
+
+        print(f"\nSuccess! Figures saved in: {out_dir}")

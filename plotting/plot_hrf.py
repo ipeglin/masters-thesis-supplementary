@@ -7,15 +7,15 @@ characteristic of the BOLD HRF (Friston et al. 1998).
 import sys
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
-
-import plot_config  # noqa: F401 – applies global rcParams
-
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import gamma as gamma_fn
-import matplotlib.pyplot as plt
+
+from lib.fs.get_script_name import get_name
+from lib.fs.project_config import REPO_ROOT
+from plotting import plot_config
+
+out_dir = plot_config.get_figs_output_dir()
 
 
 def _gamma_pdf(t, a, b):
@@ -71,7 +71,8 @@ def plot_hrf_time():
     ax.set_xlim(t[0], t[-1])
 
     fig.tight_layout()
-    plt.show()
+    fig.savefig(out_dir / "hrf.pdf")
+    # plt.show()
 
 
 def plot_hrf_spectrum():
@@ -115,7 +116,8 @@ def plot_hrf_spectrum():
     ax.legend(frameon=False)
 
     fig.tight_layout()
-    plt.show()
+    fig.savefig(out_dir / 'hrf_spectrum.pdf')
+    # plt.show()
 
 
 plot_hrf_time()

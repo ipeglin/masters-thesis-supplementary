@@ -25,19 +25,14 @@ import os
 import sys
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
-
-_matplotlib_cache_dir = _REPO_ROOT / ".cache" / "matplotlib"
-_matplotlib_cache_dir.mkdir(parents=True, exist_ok=True)
-os.environ.setdefault("MPLCONFIGDIR", str(_matplotlib_cache_dir))
-
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm as scipy_norm
 
-import plot_config as plot_config  # noqa: F401
+from lib.fs.get_script_name import get_name
+from lib.fs.project_config import REPO_ROOT
+# Import local configuration for REPO_ROOT and styling
+from plotting import plot_config
 
 # ---------------------------------------------------------------------------
 # Parameters
@@ -79,7 +74,8 @@ def plot_mapping():
     z_vals = np.arctanh(r_vals)
     deriv = 1.0 / (1.0 - r_vals ** 2)
 
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
+    # figsize=(11, 4.5)
+    fig, axes = plt.subplots(2, 1)
 
     ax = axes[0]
     ax.plot(r_vals, z_vals, color="steelblue", linewidth=1.8)
@@ -115,7 +111,10 @@ def plot_mapping():
 
 def plot_sampling_distributions(sim_results: dict) -> plt.Figure:
     n_rho = len(RHO_SHOWCASE)
-    fig, axes = plt.subplots(n_rho, 2, figsize=(11, 3.0 * n_rho), sharey=False)
+    
+    fig, axes = plt.subplots(n_rho, 2,
+                             figsize=(11, 3.0 * n_rho),
+                             sharey=False)
     fig.suptitle(
         rf"Sampling Distributions of $r$ and $z = \operatorname{{arctanh}}(r)$"
         f"\n($n = {N_SAMPLES}$, {N_SIMS:,} simulations per $\\rho$)"
@@ -186,7 +185,11 @@ def plot_variance_stabilisation(rng) -> plt.Figure:
     theory_sd_r = (1 - RHO_GRID ** 2) / np.sqrt(N_SAMPLES - 1)
     theory_sd_z = np.full_like(RHO_GRID, 1.0 / np.sqrt(N_SAMPLES - 3))
 
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), sharey=False)
+    
+    fig, axes = plt.subplots(1, 2,
+                             figsize=(11, 4.5),
+                             sharey=False
+                             )
     fig.suptitle(
         rf"Standard Deviation vs True Correlation ($n = {N_SAMPLES}$, {N_SIMS:,} simulations)"
     )
@@ -220,7 +223,10 @@ def plot_variance_stabilisation(rng) -> plt.Figure:
 # ---------------------------------------------------------------------------
 
 def plot_sample_size_effect(rng) -> plt.Figure:
-    fig, axes = plt.subplots(1, len(SAMPLE_SIZES), figsize=(13, 4.0), sharey=False)
+    
+    fig, axes = plt.subplots(1, len(SAMPLE_SIZES),
+                             figsize=(13, 4.0),
+                             sharey=False)
     fig.suptitle(
         rf"Fisher-Z Distribution at $\rho = {RHO_FIXED}$ for Varying Sample Size"
         f" ({N_SIMS:,} simulations)"
@@ -257,8 +263,7 @@ def plot_sample_size_effect(rng) -> plt.Figure:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    out_dir = plot_config.REPO_ROOT / "figures"
-    out_dir.mkdir(exist_ok=True)
+    out_dir = plot_config.get_figs_output_dir()
 
     rng = np.random.default_rng(RNG_SEED)
 
@@ -278,4 +283,4 @@ if __name__ == "__main__":
     fig4 = plot_sample_size_effect(rng)
     fig4.savefig(out_dir / "fisher_z_sample_size_effect.pdf")
 
-    plt.show()
+    # plt.show()
