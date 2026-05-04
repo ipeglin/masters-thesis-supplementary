@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \":*)",
+      "Bash(python3:*)",
+      "Bash(ls /Users/ipeglin/Git/masters-thesis-supplementary/*.py)",
+      "Bash(ls /Users/ipeglin/Git/masters-thesis-supplementary/*.ipynb)",
+      "Bash(source venv/bin/activate)",
+      "Bash(ls /Users/ipeglin/Git/masters-thesis-supplementary/requirements*)",
+      "Bash(ls /Users/ipeglin/Git/masters-thesis-supplementary/*.txt)",
+      "Bash(ls /Users/ipeglin/Git/masters-thesis-supplementary/*.toml)",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(ls /Users/ipeglin/Git/masters-thesis-supplementary/venv/bin/python*)",
+      "Bash(./venv/bin/pip install:*)",
+      "Bash(./venv/bin/python -c \"import torch; print\\(torch.__version__\\)\")",
+      "Bash(./venv/bin/python:*)",
+      "Bash(ls -la /Users/ipeglin/Git/masters-thesis-supplementary/venv/bin/python*)",
+      "Bash(/Users/ipeglin/Git/masters-thesis-supplementary/venv/bin/python -c \"import sys; print\\(sys.executable\\); print\\(sys.base_prefix\\); print\\(sys.version\\)\")",
+      "Bash(/opt/homebrew/bin/python3.12 -c \"import sys; print\\(sys.version\\); print\\(sys.base_prefix\\)\")",
+      "Bash(nm -gU /opt/homebrew/Cellar/python@3.12/*/Frameworks/Python.framework/Versions/3.12/Python)",
+      "Bash(nm -gU /opt/homebrew/bin/python3.12)",
+      "Bash(nm -gU /opt/homebrew/opt/python@3.12/Frameworks/Python.framework/Versions/3.12/Python)",
+      "Bash(otool -L /Users/ipeglin/Git/masters-thesis-supplementary/venv/lib/python3.12/site-packages/torch/_C.cpython-312-darwin.so)",
+      "Bash(nm -gU /opt/local/Library/Frameworks/Python.framework/Versions/3.11/Python)",
+      "Bash(/opt/local/bin/python3.11 --version)",
+      "Bash(rm -rf venv)",
+      "Bash(/opt/local/bin/python3.11 -m venv venv)"
+    ]
+  }
+}

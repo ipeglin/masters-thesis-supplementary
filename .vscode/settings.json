@@ -1,5 +1,11 @@
 {
   "python.defaultInterpreterPath": "${workspaceFolder}/venv/bin/python",
   "python.terminal.activateEnvironment": true,
-  "python.terminal.activateEnvInCurrentTerminal": true
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "chat.tools.terminal.autoApprove": {
+    "/^python -c \"import pandas as pd; import matplotlib\\.pyplot as plt; fig, axes = plt\\.subplots\\(2, 2, sharex=True\\); axes\\[1, 1\\]\\.set_visible\\(False\\); fig\\.savefig\\('test_sharex\\.png'\\)\"$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
 }

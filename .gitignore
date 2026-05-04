@@ -3,6 +3,7 @@ __pycache__
 
 .DS_Store
 venv/
+**/masters_thesis.egg-info/
 
 
 # Explicitly release files
