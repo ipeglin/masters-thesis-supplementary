@@ -12,6 +12,7 @@ figures/*
 *.py
 *ipynb
 *.sh
+!**/__init__.py
 
 # Retain external module
 !lib/mvmd/*
