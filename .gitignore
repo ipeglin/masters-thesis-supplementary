@@ -22,6 +22,8 @@ figures/*
 !plotting/plot_trial_blocks.ipynb
 !plotting/simulate_k.ipynb
 !plotting/plot_mvmd_modes.ipynb
+!plotting/plot_event_timing.ipynb
+!plotting/quantize_timeseries.ipynb
 
 # Python Scripts
 !utils/convert_weights.py
@@ -29,6 +31,10 @@ figures/*
 !plotting/plot_fisher_z_transform.py
 !plotting/plot_hrf.py
 !plotting/knn_results_cmp.py
+!plotting/analytic_signal_spectrum.py
+!plotting/knn_probabilistic_results.py
+!plotting/morlet_wl.py
+!plotting/vmd_illustration.py
 
 # Bash Scripts
 !utils/repack_hdf5.sh

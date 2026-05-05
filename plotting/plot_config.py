@@ -61,5 +61,17 @@ mpl.rcParams["figure.constrained_layout.w_pad"] = 0.08
 mpl.rcParams["savefig.bbox"] = "tight"
 mpl.rcParams["savefig.pad_inches"] = 0.05
 
+# MATLAB default color cycle
+from cycler import cycler
+mpl.rcParams['axes.prop_cycle'] = cycler(color=['#0072BD'])
+
 # Additional styling
 mpl.rcParams["axes.unicode_minus"] = False
+
+# MATLAB-like lines and axes styling
+mpl.rcParams['lines.linewidth'] = 1
+mpl.rcParams['axes.linewidth'] = 0.5
+mpl.rcParams['xtick.direction'] = 'in'
+mpl.rcParams['ytick.direction'] = 'in'
+mpl.rcParams['xtick.top'] = True
+mpl.rcParams['ytick.right'] = True

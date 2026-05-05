@@ -121,10 +121,15 @@ def load_results(directory):
         report_fp = data.get("roi_selection_fingerprint")
         roi_fingerprint = report_fp or dir_selection
 
+        raw_analysis = data.get("analysis", "")
+        is_mean_analysis = raw_analysis.endswith("_mean")
+        clean_analysis = format_label(raw_analysis.replace("_mean", ""))
+
         # Format metadata attributes
         record = {
             "run": run_idx,
-            "analysis": format_label(data.get("analysis")),
+            "analysis": clean_analysis,
+            "is_mean": is_mean_analysis,
             "source": format_label(data.get("source")),
             "k": data.get("num_neighbors"),
             "metric": format_label(data.get("metric")),
@@ -364,36 +369,43 @@ if __name__ == "__main__":
             label = _roi_title(roi_name, networks_label)
             print(f"\n=== ROI selection: {label} (dir={roi_selection_name}, fp={fingerprint}) ===")
 
-            # Cross-run dev plots: group by K + distance metric within selection
-            for (k_val, metric_val), group_df in fp_df.groupby(['k', 'metric']):
-                if len(group_df['run'].unique()) > 1:
-                    print(f"  cross-run dev: K={k_val}, Metric={metric_val}")
-                    dev_df = group_df.copy()
-                    dev_df['analysis'] = dev_df['analysis'].cat.remove_unused_categories()
-                    plot_run_development(
-                        dev_df, out_dir,
-                        roi_selection=roi_selection_name,
-                        roi_name=roi_name,
+            for is_mean_val, track_df in fp_df.groupby('is_mean'):
+                track_label = "Mean Vectors" if is_mean_val else "Per-ROI Vectors"
+                print(f"  --- Track: {track_label} ---")
+                
+                track_roi_name = f"{roi_name}_mean" if is_mean_val else roi_name
+                track_roi_sel = f"{roi_selection_name}_mean" if is_mean_val else roi_selection_name
+
+                # Cross-run dev plots: group by K + distance metric within selection
+                for (k_val, metric_val), group_df in track_df.groupby(['k', 'metric']):
+                    if len(group_df['run'].unique()) > 1:
+                        print(f"  cross-run dev: K={k_val}, Metric={metric_val}")
+                        dev_df = group_df.copy()
+                        dev_df['analysis'] = dev_df['analysis'].cat.remove_unused_categories()
+                        plot_run_development(
+                            dev_df, out_dir,
+                            roi_selection=track_roi_sel,
+                            roi_name=track_roi_name,
+                            networks_label=networks_label,
+                        )
+
+                # Within-run plots: group by Run + K + distance metric within selection
+                for (run_val, k_val, metric_val), group_df in track_df.groupby(['run', 'k', 'metric']):
+                    print(f"  run={run_val:02d}, K={k_val}, Metric={metric_val}")
+                    group_df = group_df.copy()
+                    group_df['analysis'] = group_df['analysis'].cat.remove_unused_categories()
+
+                    plot_comparative_metrics(
+                        group_df, out_dir, run_val,
+                        roi_selection=track_roi_sel,
+                        roi_name=track_roi_name,
                         networks_label=networks_label,
                     )
-
-            # Within-run plots: group by Run + K + distance metric within selection
-            for (run_val, k_val, metric_val), group_df in fp_df.groupby(['run', 'k', 'metric']):
-                print(f"  run={run_val:02d}, K={k_val}, Metric={metric_val}")
-                group_df = group_df.copy()
-                group_df['analysis'] = group_df['analysis'].cat.remove_unused_categories()
-
-                plot_comparative_metrics(
-                    group_df, out_dir, run_val,
-                    roi_selection=roi_selection_name,
-                    roi_name=roi_name,
-                    networks_label=networks_label,
-                )
-                plot_confusion_matrices(
-                    group_df, out_dir, run_val,
-                    roi_selection=roi_selection_name,
-                    roi_name=roi_name,
-                    networks_label=networks_label,
-                )
+                    plot_confusion_matrices(
+                        group_df, out_dir, run_val,
+                        roi_selection=track_roi_sel,
+                        roi_name=track_roi_name,
+                        networks_label=networks_label,
+                    )
 
         print(f"\nSuccess! Figures saved in: {out_dir}")
