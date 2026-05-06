@@ -42,34 +42,20 @@ def generate_signal_spectrum():
 
     # Original signal spectrum
     plt.subplot(2, 1, 1)
-    plt.plot(freqs, np.abs(S_f), "k-", linewidth=1)
-    plt.title("Spectrum of Original Signal s(t)", fontsize=14)
-    plt.ylabel("Magnitude", fontsize=12)
+    plt.plot(freqs, np.abs(S_f))
+    plt.title("Spectrum of Original Signal s(t)")
+    plt.ylabel("Magnitude")
     plt.grid(False)
     plt.xlim(-100, 100)
-
-    # Clean axes
-    ax1 = plt.gca()
-    ax1.spines["top"].set_visible(False)
-    ax1.spines["right"].set_visible(False)
-    ax1.spines["left"].set_linewidth(1)
-    ax1.spines["bottom"].set_linewidth(1)
 
     # Analytical signal spectrum
     plt.subplot(2, 1, 2)
-    plt.plot(freqs, np.abs(S_a_f), "k-", linewidth=1)
-    plt.title("Spectrum of Analytic Signal $s_a(t) = s(t) + j\\hat{s}(t)$", fontsize=14)
-    plt.xlabel("Frequency (Hz)", fontsize=12)
-    plt.ylabel("Magnitude", fontsize=12)
+    plt.plot(freqs, np.abs(S_a_f))
+    plt.title("Spectrum of Analytic Signal $s_a(t) = s(t) + j\\hat{s}(t)$")
+    plt.xlabel("Frequency (Hz)")
+    plt.ylabel("Magnitude")
     plt.grid(False)
     plt.xlim(-100, 100)
-
-    # Clean axes
-    ax2 = plt.gca()
-    ax2.spines["top"].set_visible(False)
-    ax2.spines["right"].set_visible(False)
-    ax2.spines["left"].set_linewidth(1)
-    ax2.spines["bottom"].set_linewidth(1)
 
     plt.savefig(out_dir / f"{get_name()}.pdf")
     # plt.show()
