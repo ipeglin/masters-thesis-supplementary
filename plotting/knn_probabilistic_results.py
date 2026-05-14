@@ -43,7 +43,7 @@ from lib.fs.project_config import REPO_ROOT
 from plotting import plot_config
 
 # Directory where the Rust pipeline writes classification reports.
-# ANALYSIS_RESULTS_DIR = Path("/Users/ipeglin/Documents/masters_thesis/classifier_results/")
+ANALYSIS_RESULTS_DIR = Path("/Users/ipeglin/Documents/masters_thesis/classifier_results/")
 ANALYSIS_RESULTS_DIR = Path("/Volumes/work/classifier_results")  # IDUN network mount
 
 # Match the conventions in `knn_results_cmp.py`.
@@ -123,23 +123,37 @@ def load_reports(directory: Path) -> pd.DataFrame:
         run_idx = int(run_match.group(1)) if run_match else 0
 
         parent = filepath.parent.resolve()
-        if parent == base:
+        try:
+            rel_parts = parent.relative_to(base).parts
+        except ValueError:
+            rel_parts = tuple()
+
+        is_subject_stratified = "subject_stratified" in rel_parts
+        filtered_parts = [p for p in rel_parts if p != "subject_stratified"]
+
+        if not filtered_parts:
             dir_selection = UNNAMED_ROI_SELECTION
         else:
-            dir_selection = parent.relative_to(base).parts[0]
-        roi_name, networks_label = parse_roi_dir(dir_selection)
+            dir_selection = filtered_parts[0]
+            
+        roi_name, networks_label = parse_roi_dir(dir_selection) or (dir_selection, "")
+        
         roi_fingerprint = data.get("roi_selection_fingerprint") or dir_selection
+        if is_subject_stratified:
+            roi_fingerprint += "_subject_stratified"
+            dir_selection += "_subject_stratified"
+            roi_name += " (Subject Stratified)"
 
         raw_analysis = data.get("analysis", "")
         is_mean_analysis = raw_analysis.endswith("_mean")
         clean_analysis = format_label(raw_analysis.replace("_mean", ""))
 
-        test = data.get("test", {})
-        val = data.get("val", {})
+        holdout = data.get("holdout", {})
         record = {
             "run": run_idx,
             "analysis": clean_analysis,
             "is_mean": is_mean_analysis,
+            "is_subject_stratified": is_subject_stratified,
             "source": format_label(data.get("source")),
             "k": data.get("num_neighbors"),
             "metric": format_label(data.get("metric")),
@@ -149,14 +163,11 @@ def load_reports(directory: Path) -> pd.DataFrame:
             "roi_fingerprint": roi_fingerprint,
             "platt_a": data.get("platt_a"),
             "platt_b": data.get("platt_b"),
-            "test_predictions": data.get("test_predictions", []),
-            "val_predictions": data.get("val_predictions", []),
-            "test_at_0_5": test.get("at_0_5", {}),
-            "test_at_youden": test.get("at_youden", {}),
-            "test_raw": test.get("raw", {}),
-            "test_calibrated": test.get("calibrated", {}),
-            "val_raw": val.get("raw", {}),
-            "val_calibrated": val.get("calibrated", {}),
+            "holdout_predictions": data.get("holdout_predictions", []),
+            "holdout_at_0_5": holdout.get("at_0_5", {}),
+            "holdout_at_youden": holdout.get("at_youden", {}),
+            "holdout_raw": holdout.get("raw", {}),
+            "holdout_calibrated": holdout.get("calibrated", {}),
         }
         records.append(record)
 
@@ -227,8 +238,10 @@ def plot_reliability_grid(group_df: pd.DataFrame, save_dir: Path,
     sources = sorted(group_df["source"].unique())
     if not sources or not analyses:
         return
-    n_rows = len(analyses)
-    n_cols = len(sources)
+    stack_sources = len(analyses) == 1
+    n_rows = len(sources) if stack_sources else len(analyses)
+    n_cols = len(analyses) if stack_sources else len(sources)
+    
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(4.5 * n_cols, 3.8 * n_rows),
                              sharex=True, sharey=True)
     if n_rows == 1 and n_cols == 1:
@@ -239,13 +252,17 @@ def plot_reliability_grid(group_df: pd.DataFrame, save_dir: Path,
         axes = axes[:, np.newaxis]
 
     active_grid = np.zeros((n_rows, n_cols), dtype=bool)
-    for r, analysis in enumerate(analyses):
-        for c, source in enumerate(sources):
+    for idx_a, analysis in enumerate(analyses):
+        for idx_s, source in enumerate(sources):
+            r = idx_s if stack_sources else idx_a
+            c = idx_a if stack_sources else idx_s
             if not group_df[(group_df["analysis"] == analysis) & (group_df["source"] == source)].empty:
                 active_grid[r, c] = True
 
-    for r, analysis in enumerate(analyses):
-        for c, source in enumerate(sources):
+    for idx_a, analysis in enumerate(analyses):
+        for idx_s, source in enumerate(sources):
+            r = idx_s if stack_sources else idx_a
+            c = idx_a if stack_sources else idx_s
             ax = axes[r, c]
             ax.plot([0, 1], [0, 1], "k--", linewidth=0.8, alpha=0.5)
             if not active_grid[r, c]:
@@ -253,8 +270,8 @@ def plot_reliability_grid(group_df: pd.DataFrame, save_dir: Path,
                 continue
             row = group_df[(group_df["analysis"] == analysis) & (group_df["source"] == source)].iloc[0]
             for variant, color, lbl in [
-                ("test_raw", "tab:orange", "raw"),
-                ("test_calibrated", "tab:blue", "Platt"),
+                ("holdout_raw", "tab:orange", "raw"),
+                ("holdout_calibrated", "tab:blue", "Platt"),
             ]:
                 bins = row[variant].get("calibration_bins", [])
                 xs = [b["mean_pred"] for b in bins if b["count"] > 0]
@@ -306,17 +323,21 @@ def plot_roc_pr_grid(group_df: pd.DataFrame, save_dir: Path,
     sources = sorted(group_df["source"].unique())
     if not sources or not analyses:
         return
-    n_rows = len(analyses)
-    n_cols = len(sources)
+    stack_sources = len(analyses) == 1
+    n_rows = len(sources) if stack_sources else len(analyses)
+    n_cols = len(analyses) if stack_sources else len(sources)
+    
     fig, axes = plt.subplots(n_rows, 2 * n_cols,
                              figsize=(4.0 * 2 * n_cols, 3.6 * n_rows),
                              squeeze=False)
     
     active_grid = np.zeros((n_rows, n_cols), dtype=bool)
-    for r, analysis in enumerate(analyses):
-        for c, source in enumerate(sources):
+    for idx_a, analysis in enumerate(analyses):
+        for idx_s, source in enumerate(sources):
+            r = idx_s if stack_sources else idx_a
+            c = idx_a if stack_sources else idx_s
             row = group_df[(group_df["analysis"] == analysis) & (group_df["source"] == source)]
-            if not row.empty and row.iloc[0].get("test_predictions"):
+            if not row.empty and row.iloc[0].get("holdout_predictions"):
                 active_grid[r, c] = True
 
     fig.suptitle(
@@ -325,15 +346,17 @@ def plot_roc_pr_grid(group_df: pd.DataFrame, save_dir: Path,
         y=1.01,
     )
 
-    for r, analysis in enumerate(analyses):
-        for c, source in enumerate(sources):
+    for idx_a, analysis in enumerate(analyses):
+        for idx_s, source in enumerate(sources):
+            r = idx_s if stack_sources else idx_a
+            c = idx_a if stack_sources else idx_s
             ax_roc = axes[r, 2 * c]
             ax_pr = axes[r, 2 * c + 1]
             row = group_df[(group_df["analysis"] == analysis) & (group_df["source"] == source)]
             if row.empty:
                 ax_roc.set_visible(False); ax_pr.set_visible(False)
                 continue
-            preds = row.iloc[0]["test_predictions"]
+            preds = row.iloc[0]["holdout_predictions"]
             if not preds:
                 ax_roc.set_visible(False); ax_pr.set_visible(False)
                 continue
@@ -352,8 +375,8 @@ def plot_roc_pr_grid(group_df: pd.DataFrame, save_dir: Path,
                 ax_pr.plot(rec, prec, color=color, linewidth=1.5,
                            label=f"{lbl} AUC={auc_p:.3f}")
 
-            youden = row.iloc[0]["test_at_youden"].get("threshold")
-            t05_acc = row.iloc[0]["test_at_0_5"].get("accuracy")
+            youden = row.iloc[0]["holdout_at_youden"].get("threshold")
+            t05_acc = row.iloc[0]["holdout_at_0_5"].get("accuracy")
             if youden is not None:
                 s = np.array([p["p1_calibrated"] for p in preds], dtype=float)
                 
@@ -422,17 +445,21 @@ def plot_uncertainty_grid(group_df: pd.DataFrame, save_dir: Path,
     sources = sorted(group_df["source"].unique())
     if not sources or not analyses:
         return
-    n_rows = len(analyses)
-    n_cols = len(sources)
+    stack_sources = len(analyses) == 1
+    n_rows = len(sources) if stack_sources else len(analyses)
+    n_cols = len(analyses) if stack_sources else len(sources)
+    
     fig, axes = plt.subplots(n_rows, n_cols,
                              figsize=(5.5 * n_cols, 3.0 * n_rows),
                              squeeze=False)
                              
     active_grid = np.zeros((n_rows, n_cols), dtype=bool)
-    for r, analysis in enumerate(analyses):
-        for c, source in enumerate(sources):
+    for idx_a, analysis in enumerate(analyses):
+        for idx_s, source in enumerate(sources):
+            r = idx_s if stack_sources else idx_a
+            c = idx_a if stack_sources else idx_s
             row = group_df[(group_df["analysis"] == analysis) & (group_df["source"] == source)]
-            if not row.empty and row.iloc[0].get("test_predictions"):
+            if not row.empty and row.iloc[0].get("holdout_predictions"):
                 active_grid[r, c] = True
 
     fig.suptitle(
@@ -441,13 +468,15 @@ def plot_uncertainty_grid(group_df: pd.DataFrame, save_dir: Path,
         y=1.01,
     )
 
-    for r, analysis in enumerate(analyses):
-        for c, source in enumerate(sources):
+    for idx_a, analysis in enumerate(analyses):
+        for idx_s, source in enumerate(sources):
+            r = idx_s if stack_sources else idx_a
+            c = idx_a if stack_sources else idx_s
             ax = axes[r, c]
             row = group_df[(group_df["analysis"] == analysis) & (group_df["source"] == source)]
             if row.empty:
                 ax.set_visible(False); continue
-            preds = row.iloc[0]["test_predictions"]
+            preds = row.iloc[0]["holdout_predictions"]
             if not preds:
                 ax.set_visible(False); continue
             df_p = pd.DataFrame(preds).sort_values("p1_calibrated").reset_index(drop=True)
@@ -456,7 +485,7 @@ def plot_uncertainty_grid(group_df: pd.DataFrame, save_dir: Path,
             ax.axhspan(*UNCERTAINTY_BAND, color="gray", alpha=0.15,
                        label=f"uncertainty band {UNCERTAINTY_BAND}")
             ax.axhline(0.5, color="black", linestyle="--", linewidth=0.6, alpha=0.5)
-            youden = row.iloc[0]["test_at_youden"].get("threshold")
+            youden = row.iloc[0]["holdout_at_youden"].get("threshold")
             if youden is not None:
                 ax.axhline(youden, color="green", linestyle="-.", linewidth=1.0,
                            alpha=0.7, label=f"Youden t={youden:.2f}")
@@ -497,17 +526,21 @@ def plot_confusion_grid(group_df: pd.DataFrame, save_dir: Path,
     sources = sorted(group_df["source"].unique())
     if not sources or not analyses:
         return
-    n_rows = len(analyses)
-    n_cols = len(sources)
+    stack_sources = len(analyses) == 1
+    n_rows = len(sources) if stack_sources else len(analyses)
+    n_cols = len(analyses) if stack_sources else len(sources)
+    
     fig, axes = plt.subplots(n_rows, 2 * n_cols,
                              figsize=(6.0 * 2 * n_cols, 4.5 * n_rows),
                              squeeze=False)
                              
     active_grid = np.zeros((n_rows, n_cols), dtype=bool)
-    for r, analysis in enumerate(analyses):
-        for c, source in enumerate(sources):
+    for idx_a, analysis in enumerate(analyses):
+        for idx_s, source in enumerate(sources):
+            r = idx_s if stack_sources else idx_a
+            c = idx_a if stack_sources else idx_s
             row = group_df[(group_df["analysis"] == analysis) & (group_df["source"] == source)]
-            if not row.empty and row.iloc[0].get("test_predictions"):
+            if not row.empty and row.iloc[0].get("holdout_predictions"):
                 active_grid[r, c] = True
 
     fig.suptitle(
@@ -516,8 +549,10 @@ def plot_confusion_grid(group_df: pd.DataFrame, save_dir: Path,
         y=1.01,
     )
 
-    for r, analysis in enumerate(analyses):
-        for c, source in enumerate(sources):
+    for idx_a, analysis in enumerate(analyses):
+        for idx_s, source in enumerate(sources):
+            r = idx_s if stack_sources else idx_a
+            c = idx_a if stack_sources else idx_s
             ax_05 = axes[r, 2 * c]
             ax_youden = axes[r, 2 * c + 1]
             row = group_df[(group_df["analysis"] == analysis) & (group_df["source"] == source)]
@@ -526,16 +561,16 @@ def plot_confusion_grid(group_df: pd.DataFrame, save_dir: Path,
                 ax_youden.set_visible(False)
                 continue
             
-            preds = row.iloc[0]["test_predictions"]
+            preds = row.iloc[0]["holdout_predictions"]
             if not preds:
                 ax_05.set_visible(False)
                 ax_youden.set_visible(False)
                 continue
-                
+
             y_true = np.array([p["y_true"] for p in preds])
             p1_calibrated = np.array([p["p1_calibrated"] for p in preds])
-            
-            youden = row.iloc[0]["test_at_youden"].get("threshold", 0.5)
+
+            youden = row.iloc[0]["holdout_at_youden"].get("threshold", 0.5)
             
             for threshold, ax, title_prefix in [(0.5, ax_05, "t=0.5"), (youden, ax_youden, f"t={youden:.2f}")]:
                 y_pred = (p1_calibrated >= threshold).astype(int)
@@ -582,23 +617,24 @@ def build_summary_table(df: pd.DataFrame) -> pd.DataFrame:
         rows.append({
             "run": r["run"],
             "analysis": r["analysis"],
+            "is_subject_stratified": r["is_subject_stratified"],
             "source": r["source"],
             "k": r["k"],
             "metric": r["metric"],
             "roi_selection": r["roi_selection"],
-            "test_acc_0_5": r["test_at_0_5"].get("accuracy"),
-            "test_acc_youden": r["test_at_youden"].get("accuracy"),
-            "youden_threshold": r["test_at_youden"].get("threshold"),
-            "brier_raw": r["test_raw"].get("brier"),
-            "brier_calibrated": r["test_calibrated"].get("brier"),
-            "log_loss_raw": r["test_raw"].get("log_loss"),
-            "log_loss_calibrated": r["test_calibrated"].get("log_loss"),
-            "auc_roc_raw": r["test_raw"].get("auc_roc"),
-            "auc_roc_calibrated": r["test_calibrated"].get("auc_roc"),
-            "auc_pr_raw": r["test_raw"].get("auc_pr"),
-            "auc_pr_calibrated": r["test_calibrated"].get("auc_pr"),
-            "ece_raw": r["test_raw"].get("expected_calibration_error"),
-            "ece_calibrated": r["test_calibrated"].get("expected_calibration_error"),
+            "holdout_acc_0_5": r["holdout_at_0_5"].get("accuracy"),
+            "holdout_acc_youden": r["holdout_at_youden"].get("accuracy"),
+            "youden_threshold": r["holdout_at_youden"].get("threshold"),
+            "brier_raw": r["holdout_raw"].get("brier"),
+            "brier_calibrated": r["holdout_calibrated"].get("brier"),
+            "log_loss_raw": r["holdout_raw"].get("log_loss"),
+            "log_loss_calibrated": r["holdout_calibrated"].get("log_loss"),
+            "auc_roc_raw": r["holdout_raw"].get("auc_roc"),
+            "auc_roc_calibrated": r["holdout_calibrated"].get("auc_roc"),
+            "auc_pr_raw": r["holdout_raw"].get("auc_pr"),
+            "auc_pr_calibrated": r["holdout_calibrated"].get("auc_pr"),
+            "ece_raw": r["holdout_raw"].get("expected_calibration_error"),
+            "ece_calibrated": r["holdout_calibrated"].get("expected_calibration_error"),
             "platt_a": r["platt_a"],
             "platt_b": r["platt_b"],
         })
@@ -683,5 +719,24 @@ if __name__ == "__main__":
                                           track_roi_sel, track_roi_name, networks_label, group_key)
                     plot_confusion_grid(sub_df, sub_dir, run_val, k_val, metric_val,
                                         track_roi_sel, track_roi_name, networks_label, group_key)
+
+                # 3. Plot individual analyses
+                for analysis_val in group_df["analysis"].unique():
+                    single_df = group_df[group_df["analysis"] == analysis_val].copy()
+                    if single_df.empty:
+                        continue
+                    single_df["analysis"] = single_df["analysis"].cat.remove_unused_categories()
+                    
+                    analysis_slug = slugify(analysis_val)
+                    single_dir = figs_out_dir / track_roi_sel / analysis_slug
+                    single_dir.mkdir(parents=True, exist_ok=True)
+                    plot_reliability_grid(single_df, single_dir, run_val, k_val, metric_val,
+                                          track_roi_sel, track_roi_name, networks_label, analysis_slug)
+                    plot_roc_pr_grid(single_df, single_dir, run_val, k_val, metric_val,
+                                     track_roi_sel, track_roi_name, networks_label, analysis_slug)
+                    plot_uncertainty_grid(single_df, single_dir, run_val, k_val, metric_val,
+                                          track_roi_sel, track_roi_name, networks_label, analysis_slug)
+                    plot_confusion_grid(single_df, single_dir, run_val, k_val, metric_val,
+                                        track_roi_sel, track_roi_name, networks_label, analysis_slug)
 
     print(f"\nSuccess! Figures saved in: {figs_out_dir}")

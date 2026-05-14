@@ -25,9 +25,14 @@ figures/*
 !plotting/plot_mvmd_modes.ipynb
 !plotting/plot_event_timing.ipynb
 !plotting/quantize_timeseries.ipynb
+!plotting/plot_cwt_scalogram.ipynb
+!plotting/plot_hht_spectrogram.ipynb
 
 # Python Scripts
 !utils/convert_weights.py
+!utils/move_and_rename_h5_datasets.py
+
+# Plotting
 !plotting/plot_config.py
 !plotting/plot_fisher_z_transform.py
 !plotting/plot_hrf.py
@@ -36,6 +41,19 @@ figures/*
 !plotting/knn_probabilistic_results.py
 !plotting/morlet_wl.py
 !plotting/vmd_illustration.py
+!plotting/datasplit.py
+!plotting/plot_knn_k_selection.py
+!plotting/plot_mvmd_underbinning.py
+!plotting/plot_conv_illustration.py
+!plotting/plot_dense_layer_illustration.py
+!plotting/plot_densenet201_feature_extraction.py
+!plotting/plot_modes_multichannel.py
+!plotting/plot_multichannel_heatmap.py
+!plotting/plot_mvmd_modes_distribution.py
+!plotting/plot_mvmd_pipeline_
+!plotting/plot_pooling_illustration.py
+!plotting/plot_pooling_max_avg.py
+!plotting/
 
 # Bash Scripts
 !utils/repack_hdf5.sh

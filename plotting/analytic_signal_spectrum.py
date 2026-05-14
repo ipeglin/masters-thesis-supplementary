@@ -43,17 +43,28 @@ def generate_signal_spectrum():
     # Original signal spectrum
     plt.subplot(2, 1, 1)
     plt.plot(freqs, np.abs(S_f))
+<<<<<<< Updated upstream
     plt.title("Spectrum of Original Signal s(t)")
     plt.ylabel("Magnitude")
+=======
+    plt.title("Spectrum of Original Signal s(t)", fontsize=14)
+    plt.ylabel("Magnitude", fontsize=12)
+>>>>>>> Stashed changes
     plt.grid(False)
     plt.xlim(-100, 100)
 
     # Analytical signal spectrum
     plt.subplot(2, 1, 2)
     plt.plot(freqs, np.abs(S_a_f))
+<<<<<<< Updated upstream
     plt.title("Spectrum of Analytic Signal $s_a(t) = s(t) + j\\hat{s}(t)$")
     plt.xlabel("Frequency (Hz)")
     plt.ylabel("Magnitude")
+=======
+    plt.title("Spectrum of Analytic Signal $s_a(t) = s(t) + j\\hat{s}(t)$", fontsize=14)
+    plt.xlabel("Frequency (Hz)", fontsize=12)
+    plt.ylabel("Magnitude", fontsize=12)
+>>>>>>> Stashed changes
     plt.grid(False)
     plt.xlim(-100, 100)
 
