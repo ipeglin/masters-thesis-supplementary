@@ -20,7 +20,7 @@ FILE_PATH_HAMMER = FILE_DIR / SUBJECT_ID / f"{SUBJECT_ID}{FILE_SUFFIX_HAMMER}"
 FS = 1.25 # fs for TR = 0.8s
 
 SLOW_BANDS = [
-    ("Slow 5*", 0.005, 0.010, "#e8f4f8"),
+    ("Slow 5*", 0.01, 0.027, "#e8f4f8"),
     ("Slow 4", 0.027, 0.073, "#f8f0e8"),
     ("Slow 3", 0.073, 0.198, "#e8f8ec"),
     ("Slow 2*", 0.198, 0.250, "#f8e8f4"),
