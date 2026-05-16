@@ -31,7 +31,7 @@ def extract_subject_mode_data(subject_dir, subject_id, file_suffix, exp_name):
                 for k in range(K):
                     records.append({
                         'Subject': subject_id,
-                        'Experiment': exp_name,
+                        'fMRI run': exp_name,
                         'Mode': k + 1,
                         'CenterFreq': center_freqs[k],
                         'Energy': rel_energy[k]
@@ -63,7 +63,7 @@ def extract_subject_mode_data(subject_dir, subject_id, file_suffix, exp_name):
                     for k in range(K):
                         records.append({
                             'Subject': subject_id,
-                            'Experiment': exp_name,
+                            'fMRI run': exp_name,
                             'Mode': k + 1,
                             'CenterFreq': avg_freqs[k],
                             'Energy': avg_energy[k]
@@ -144,7 +144,7 @@ def plot_modes_distribution():
 
     # (a) Frequency Distribution
     ax_freq = axes[0]
-    sns.boxplot(data=df, x='Mode', y='CenterFreq', hue='Experiment', ax=ax_freq, fliersize=3)
+    sns.boxplot(data=df, x='Mode', y='CenterFreq', hue='fMRI run', ax=ax_freq, fliersize=3)
     ax_freq.set_title('(a)')
     ax_freq.set_ylabel('Frequency (mHz)')
     ax_freq.set_xlabel('Intrinsic Mode Function')
@@ -156,7 +156,7 @@ def plot_modes_distribution():
         
     # (b) Energy Distribution
     ax_energy = axes[1]
-    sns.boxplot(data=df, x='Mode', y='Energy', hue='Experiment', ax=ax_energy, fliersize=3)
+    sns.boxplot(data=df, x='Mode', y='Energy', hue='fMRI run', ax=ax_energy, fliersize=3)
     ax_energy.set_title('(b)')
     ax_energy.set_ylabel('Energy (%)')
     ax_energy.set_xlabel('Intrinsic Mode Functions')

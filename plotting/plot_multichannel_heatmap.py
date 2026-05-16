@@ -52,7 +52,7 @@ def plot_multichannel_heatmap(file_path: Path):
 
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Channel")
-    ax.set_title(f"Multichannel fMRI Timeseries\n{SUBJECT_ID}")
+    ax.set_title(f"Multichannel fMRI Timeseries\n{SUBJECT_ID} (resting state)")
 
     cbar = fig.colorbar(im, ax=ax)
     cbar.set_label("Amplitude (Z-score)")
