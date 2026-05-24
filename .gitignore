@@ -27,6 +27,7 @@ figures/*
 !plotting/quantize_timeseries.ipynb
 !plotting/plot_cwt_scalogram.ipynb
 !plotting/plot_hht_spectrogram.ipynb
+!plotting/plot_hht_cwt_comparison.ipynb
 
 # Python Scripts
 !utils/convert_weights.py
