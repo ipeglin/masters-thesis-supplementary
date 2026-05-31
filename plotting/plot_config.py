@@ -4,10 +4,15 @@ Optimized for 12pt font and 150mm linewidth with a MATLAB-like aesthetic.
 """
 
 import inspect
+import shutil
 from pathlib import Path
 
 import matplotlib as mpl
 from cycler import cycler
+
+# Full LaTeX rendering needs a `latex` binary on PATH; HPC nodes often lack it.
+# Fall back to mathtext (cm fontset) when absent so figures still render.
+_HAS_LATEX = shutil.which("latex") is not None
 
 try:
     from lib.fs.project_config import REPO_ROOT
@@ -43,7 +48,7 @@ mpl.rcParams.update(
         "font.family": "serif",
         "font.serif": ["cmr10", "Computer Modern Serif", "DejaVu Serif"],
         "mathtext.fontset": "cm",
-        "text.usetex": True,
+        "text.usetex": _HAS_LATEX,
         "axes.formatter.use_mathtext": True,
         "axes.unicode_minus": False,
     }
